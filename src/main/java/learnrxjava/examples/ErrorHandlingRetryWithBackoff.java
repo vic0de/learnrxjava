@@ -2,7 +2,8 @@ package learnrxjava.examples;
 
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
+import io.reactivex.Observable;
+
 
 public class ErrorHandlingRetryWithBackoff {
 
@@ -29,7 +30,7 @@ public class ErrorHandlingRetryWithBackoff {
                 System.out.println("2) delay retry by " + i + " second(s)");
                 return Observable.timer(i, TimeUnit.SECONDS);
             }).concatWith(Observable.error(new RuntimeException("Failed after 3 retries")));
-        }).toBlocking().forEach(System.out::println);
+        }).blockingForEach(System.out::println);
 
     }
 }
