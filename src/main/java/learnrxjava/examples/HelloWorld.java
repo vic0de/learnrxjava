@@ -1,10 +1,11 @@
 package learnrxjava.examples;
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.Observable.OnSubscribe;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+
 
 public class HelloWorld {
 
@@ -13,7 +14,7 @@ public class HelloWorld {
         // Hello World
         Observable.create(subscriber -> {
             subscriber.onNext("Hello World!");
-            subscriber.onCompleted();
+            subscriber.onComplete();
         }).subscribe(System.out::println);
 
         // shorten by using helper method
@@ -27,96 +28,85 @@ public class HelloWorld {
                         () -> System.out.println("Done"));
 
         // expand to show full classes
-        Observable.create(new OnSubscribe<String>() {
+        ObservableOnSubscribe<String> handler = emitter -> {
+        	emitter.onNext("Hello World!");
+        	emitter.onComplete();
+        };
+        
+        Observable.create(handler).subscribe(new Consumer<String>() {
 
-            @Override
-            public void call(Subscriber<? super String> subscriber) {
-                subscriber.onNext("Hello World!");
-                subscriber.onCompleted();
-            }
-
-        }).subscribe(new Subscriber<String>() {
-
-            @Override
-            public void onCompleted() {
-                System.out.println("Done");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onNext(String t) {
+			@Override
+			public void accept(String t) throws Exception {
                 System.out.println(t);
-            }
+			}
+		});
+    
 
-        });
-
-        // add error propagation
-        Observable.create(subscriber -> {
-            try {
-                subscriber.onNext("Hello World!");
-                subscriber.onCompleted();
-            } catch (Exception e) {
-                subscriber.onError(e);
-            }
+        Observable.create(emitter -> {
+        	 
+        	try {
+        		emitter.onNext("Hello World!");
+        		emitter.onComplete();
+        	}catch(Exception ex) {
+        		emitter.onError(ex);
+        	}
+        	
         }).subscribe(System.out::println);
 
         // add concurrency (manually)
-        Observable.create(subscriber -> {
+        Observable.create(emitter -> {
             new Thread(() -> {
                 try {
-                    subscriber.onNext(getData());
-                    subscriber.onCompleted();
+                	emitter.onNext(getData());
+                	emitter.onComplete();
                 } catch (Exception e) {
-                    subscriber.onError(e);
+                	emitter.onError(e);
                 }
             }).start();
         }).subscribe(System.out::println);
 
         // add concurrency (using a Scheduler)
-        Observable.create(subscriber -> {
+        Observable.create(emitter -> {
             try {
-                subscriber.onNext(getData());
-                subscriber.onCompleted();
+            	emitter.onNext(getData());
+            	emitter.onComplete();
             } catch (Exception e) {
-                subscriber.onError(e);
+            	emitter.onError(e);
             }
         }).subscribeOn(Schedulers.io())
                 .subscribe(System.out::println);
 
         // add operator
-        Observable.create(subscriber -> {
+        Observable.create(emitter -> {
             try {
-                subscriber.onNext(getData());
-                subscriber.onCompleted();
+            	emitter.onNext(getData());
+            	emitter.onComplete();
             } catch (Exception e) {
-                subscriber.onError(e);
+            	emitter.onError(e);
             }
         }).subscribeOn(Schedulers.io())
                 .map(data -> data + " --> at " + System.currentTimeMillis())
                 .subscribe(System.out::println);
 
         // add error handling
-        Observable.create(subscriber -> {
+        Observable.create(emitter -> {
             try {
-                subscriber.onNext(getData());
-                subscriber.onCompleted();
+            	emitter.onNext(getData());
+            	emitter.onComplete();
             } catch (Exception e) {
-                subscriber.onError(e);
+            	emitter.onError(e);
             }
         }).subscribeOn(Schedulers.io())
                 .map(data -> data + " --> at " + System.currentTimeMillis())
-                .onErrorResumeNext(e -> Observable.just("Fallback Data"))
+                .onErrorResumeNext(e -> {
+                	return Observable.just("Fallback Data");})
                 .subscribe(System.out::println);
 
         // infinite
-        Observable.create(subscriber -> {
+        Observable.create(emitter -> {
             int i = 0;
-            while (!subscriber.isUnsubscribed()) {
-                subscriber.onNext(i++);
+            while (!emitter.isDisposed()) {
+            	emitter.onNext(i++);
             }
         }).take(10).subscribe(System.out::println);
 
