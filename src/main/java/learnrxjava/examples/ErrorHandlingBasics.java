@@ -1,6 +1,6 @@
 package learnrxjava.examples;
 
-import rx.Observable;
+import io.reactivex.Observable;
 
 public class ErrorHandlingBasics {
 
