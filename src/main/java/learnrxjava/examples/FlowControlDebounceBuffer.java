@@ -2,9 +2,10 @@ package learnrxjava.examples;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.schedulers.Schedulers;
+
 
 public class FlowControlDebounceBuffer {
 
@@ -20,18 +21,18 @@ public class FlowControlDebounceBuffer {
         // then the buffered one that uses the debounced stream to demark window start/stop
         Observable<List<Integer>> buffered = burstStream.buffer(debounced);
         // then we subscribe to the buffered stream so it does what we want
-        buffered.toBlocking().forEach(System.out::println);
+        buffered.blockingForEach(System.out::println);
     }
 
     /**
      * This is an artificial source to demonstrate an infinite stream that bursts intermittently
      */
     public static Observable<Integer> intermittentBursts() {
-        return Observable.create((Subscriber<? super Integer> s) -> {
-            while (!s.isUnsubscribed()) {
+        return Observable.create((ObservableEmitter<Integer> emitter) -> {
+            while (!emitter.isDisposed()) {
                 // burst some number of items
                 for (int i = 0; i < Math.random() * 20; i++) {
-                    s.onNext(i);
+                    emitter.onNext(i);
                 }
                 try {
                     // sleep for a random amount of time
