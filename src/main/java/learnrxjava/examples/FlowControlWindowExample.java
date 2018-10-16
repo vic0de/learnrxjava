@@ -2,18 +2,20 @@ package learnrxjava.examples;
 
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.schedulers.Schedulers;
+
+
 
 public class FlowControlWindowExample {
 
     public static void main(String args[]) {
         // buffer every 500ms (using 999999999 to mark start of output)
-        hotStream().window(500, TimeUnit.MILLISECONDS).take(10).flatMap(w -> w.startWith(999999999)).toBlocking().forEach(System.out::println);
+        hotStream().window(500, TimeUnit.MILLISECONDS).take(10).flatMap(w -> w.startWith(999999999)).blockingForEach(System.out::println);
 
         // buffer 10 items at a time (using 999999999 to mark start of output)
-        hotStream().window(10).take(2).flatMap(w -> w.startWith(999999999)).toBlocking().forEach(System.out::println);
+        hotStream().window(10).take(2).flatMap(w -> w.startWith(999999999)).blockingForEach(System.out::println);
 
         System.out.println("Done");
     }
@@ -22,8 +24,8 @@ public class FlowControlWindowExample {
      * This is an artificial source to demonstrate an infinite stream that bursts intermittently
      */
     public static Observable<Integer> hotStream() {
-        return Observable.create((Subscriber<? super Integer> s) -> {
-            while (!s.isUnsubscribed()) {
+        return Observable.create((ObservableEmitter<Integer> s) -> {
+            while (!s.isDisposed()) {
                 // burst some number of items
                 for (int i = 0; i < Math.random() * 20; i++) {
                     s.onNext(i);

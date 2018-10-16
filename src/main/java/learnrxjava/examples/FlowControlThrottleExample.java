@@ -1,27 +1,29 @@
 package learnrxjava.examples;
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.schedulers.Schedulers;
+
+
 
 public class FlowControlThrottleExample {
 
     public static void main(String args[]) {
         // first item emitted in each time window
-        hotStream().throttleFirst(500, TimeUnit.MILLISECONDS).take(10).toBlocking().forEach(System.out::println);
+        hotStream().throttleFirst(500, TimeUnit.MILLISECONDS).take(10).blockingForEach(System.out::println);
         
         // last item emitted in each time window
-        hotStream().throttleLast(500, TimeUnit.MILLISECONDS).take(10).toBlocking().forEach(System.out::println);
+        hotStream().throttleLast(500, TimeUnit.MILLISECONDS).take(10).blockingForEach(System.out::println);
     }
 
     /**
      * This is an artificial source to demonstrate an infinite stream that emits randomly
      */
     public static Observable<Integer> hotStream() {
-        return Observable.create((Subscriber<? super Integer> s) -> {
+        return Observable.create((ObservableEmitter<Integer> s) -> {
             int i = 0;
-            while (!s.isUnsubscribed()) {
+            while (!s.isDisposed()) {
                 s.onNext(i++);
                 try {
                     // sleep for a random amount of time
