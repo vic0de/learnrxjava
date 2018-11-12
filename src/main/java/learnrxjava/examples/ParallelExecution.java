@@ -1,7 +1,9 @@
 package learnrxjava.examples;
-import rx.Observable;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
+
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.schedulers.Schedulers;
 
 public class ParallelExecution {
 
@@ -24,35 +26,35 @@ public class ParallelExecution {
     }
 
     private static void mergingAsync() {
-        Observable.merge(getDataAsync(1), getDataAsync(2)).toBlocking().forEach(System.out::println);
+        Observable.merge(getDataAsync(1), getDataAsync(2)).blockingForEach(System.out::println);
     }
 
     private static void mergingSync() {
         // here you'll see the delay as each is executed synchronously
-        Observable.merge(getDataSync(1), getDataSync(2)).toBlocking().forEach(System.out::println);
+        Observable.merge(getDataSync(1), getDataSync(2)).blockingForEach(System.out::println);
     }
 
     private static void mergingSyncMadeAsync() {
         // if you have something synchronous and want to make it async, you can schedule it like this
         // so here we see both executed concurrently
-        Observable.merge(getDataSync(1).subscribeOn(Schedulers.io()), getDataSync(2).subscribeOn(Schedulers.io())).toBlocking().forEach(System.out::println);
+        Observable.merge(getDataSync(1).subscribeOn(Schedulers.io()), getDataSync(2).subscribeOn(Schedulers.io())).blockingForEach(System.out::println);
     }
 
     private static void flatMapExampleAsync() {
         Observable.range(0, 5).flatMap(i -> {
             return getDataAsync(i);
-        }).toBlocking().forEach(System.out::println);
+        }).blockingForEach(System.out::println);
     }
 
     private static void flatMapExampleSync() {
         Observable.range(0, 5).flatMap(i -> {
             return getDataSync(i);
-        }).toBlocking().forEach(System.out::println);
+        }).blockingForEach(System.out::println);
     }
 
     private static void flatMapBufferedExampleAsync() {
         Observable.range(0, 5000).buffer(500).flatMap(i -> {
-            return Observable.from(i).subscribeOn(Schedulers.computation()).map(item -> {
+            return Observable.fromIterable(i).subscribeOn(Schedulers.computation()).map(item -> {
                 // simulate computational work
                     try {
                         Thread.sleep(1);
@@ -60,7 +62,7 @@ public class ParallelExecution {
                     }
                     return item + " processed " + Thread.currentThread();
                 });
-        }).toBlocking().forEach(System.out::println);
+        }).blockingForEach(System.out::println);
     }
 
     private static void flatMapWindowedExampleAsync() {
@@ -73,7 +75,7 @@ public class ParallelExecution {
                     }
                     return item + " processed " + Thread.currentThread();
                 });
-        }).toBlocking().forEach(System.out::println);
+        }).blockingForEach(System.out::println);
     }
 
     // artificial representations of IO work
@@ -82,15 +84,20 @@ public class ParallelExecution {
     }
 
     static Observable<Integer> getDataSync(int i) {
-        return Observable.create((Subscriber<? super Integer> s) -> {
-            // simulate latency
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                s.onNext(i);
-                s.onCompleted();
-            });
+    	
+    	return Observable.create(new ObservableOnSubscribe<Integer>() {
+
+			@Override
+			public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+				try {
+					Thread.sleep(1000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				emitter.onNext(i);
+				emitter.onComplete();
+				
+			}
+		});
     }
 }
